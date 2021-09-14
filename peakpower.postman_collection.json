@@ -1,0 +1,1091 @@
+{
+	"info": {
+		"_postman_id": "8d4a43fe-a107-402c-8c55-d5e5deab8273",
+		"name": "peakpower",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Integration Test",
+			"item": [
+				{
+					"name": "Sensor data service",
+					"item": [
+						{
+							"name": "sensor-readings",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let jsonData = pm.response.json();\r",
+											"\r",
+											"let bldgIds = pm.variables.get(\"bldgIds\");\r",
+											"let sensor = JSON.parse(pm.variables.get(\"sensor\"));\r",
+											"\r",
+											"if (bldgIds && bldgIds.length > 0) {\r",
+											"    postman.setNextRequest(\"sensor-readings\");\r",
+											"\r",
+											"    //Verify Status\r",
+											"    pm.test(\"Status Code is 200\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    });\r",
+											"    //Verify number of sensors on a building\r",
+											"    //  pm.test(\"There are \"+sensor+\" sensors on the building: \"+pm.variables.get(\"bldgId\"), () => {\r",
+											"    // pm.expect(jsonData.data.length).to.eql(sensor);\r",
+											"    // });\r",
+											"      \r",
+											"} else {\r",
+											"    pm.test(\"Status Code is 200\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    });\r",
+											"    //Verify request was successfull\r",
+											"    // pm.test(\"There are \"+sensor+\" sensors on the building: \"+pm.variables.get(\"bldgId\"), () => {\r",
+											"    // pm.expect(jsonData.data.length).to.eql(sensor);\r",
+											"    // });\r",
+											"    pm.variables.clear(bldgIds);\r",
+											"}\r",
+											"\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let input = pm.environment.get(\"sensorData\"); \r",
+											"let parse = require('csv-parse/lib/sync');\r",
+											"\r",
+											"let records = parse(input, {\r",
+											" columns: true,\r",
+											" skip_empty_lines: true\r",
+											"});\r",
+											"\r",
+											"bldg_list = records.map(function (obj) {\r",
+											"  return obj.building_id;\r",
+											"});\r",
+											"\r",
+											"sensor_list = records.map(function (obj) {\r",
+											"  return obj.num_of_sensors;\r",
+											"});\r",
+											"\r",
+											"let bldgIds = pm.variables.get(\"bldgIds\");\r",
+											"    if (!bldgIds) {\r",
+											"     bldgIds = bldg_list;\r",
+											"     sensors = sensor_list;\r",
+											"    }\r",
+											"let bldgId = bldgIds.shift();\r",
+											"let sensor = sensors.shift();\r",
+											"console.log(bldgId);\r",
+											"pm.variables.set(\"bldgId\", bldgId);\r",
+											"pm.variables.set(\"sensor\", sensor);\r",
+											"pm.variables.set(\"bldgIds\", bldgIds);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "accept",
+										"value": "*/*"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{sensorUrl}}/v1/buildings/:buildingId/sensors",
+									"host": [
+										"{{sensorUrl}}"
+									],
+									"path": [
+										"v1",
+										"buildings",
+										":buildingId",
+										"sensors"
+									],
+									"variable": [
+										{
+											"key": "buildingId",
+											"value": "{{bldgId}}",
+											"description": "Required"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "calculate the building ncp vales",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let year = new Date().toJSON().slice(0, 4);\r",
+											"let month = new Date().toJSON().slice(5, 7);\r",
+											"let input = pm.environment.get(\"sensorData\"); \r",
+											"let parse = require('csv-parse/lib/sync');\r",
+											"\r",
+											"let records = parse(input, {\r",
+											" columns: true,\r",
+											" skip_empty_lines: true\r",
+											"});\r",
+											"\r",
+											"bldg_list = records.map(function (obj) {\r",
+											"  return obj.building_id;\r",
+											"});\r",
+											"\r",
+											"let bldgIds = pm.variables.get(\"bldgIds\");\r",
+											"    if (!bldgIds) {\r",
+											"     bldgIds = bldg_list;\r",
+											"    }\r",
+											"let bldgId = bldgIds.shift();\r",
+											"pm.variables.set(\"bldgId\", bldgId);\r",
+											"pm.variables.set(\"year\", year);\r",
+											"pm.variables.set(\"month\", month);\r",
+											"pm.variables.set(\"bldgIds\", bldgIds);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let jsonData = pm.response.json();\r",
+											"\r",
+											"let bldgIds = pm.variables.get(\"bldgIds\");\r",
+											"if (bldgIds && bldgIds.length > 0) {\r",
+											"    postman.setNextRequest(\"calculate the building ncp vales\");\r",
+											"    //Verify response is received\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"      \r",
+											"} else {\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"   pm.variables.clear(bldgIds);\r",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "accept",
+										"value": "*/*"
+									}
+								],
+								"url": {
+									"raw": "{{sensorUrl}}/v1/buildings//:buildingId/ncp",
+									"host": [
+										"{{sensorUrl}}"
+									],
+									"path": [
+										"v1",
+										"buildings",
+										"",
+										":buildingId",
+										"ncp"
+									],
+									"variable": [
+										{
+											"key": "buildingId",
+											"value": "{{bldgId}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "consumption of sensors",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											" let fromyear = new Date().toISOString();\r",
+											"let toyear = new Date().toISOString();\r",
+											"console.log(fromyear);\r",
+											"console.log(toyear);\r",
+											"let input = pm.environment.get(\"sensorData\"); \r",
+											"let parse = require('csv-parse/lib/sync');\r",
+											"\r",
+											"let records = parse(input, {\r",
+											" columns: true,\r",
+											" skip_empty_lines: true\r",
+											"});\r",
+											"sensor_list = records.map(function (obj) {\r",
+											"  return obj.num_of_sensors;\r",
+											"});\r",
+											"\r",
+											"let sensors = pm.variables.get(\"sensors\");\r",
+											"    if (!sensors) {\r",
+											"     sensors = sensor_list;\r",
+											"    }\r",
+											"\r",
+											"let sensor = sensors.shift();\r",
+											"\r",
+											"pm.variables.set(\"sensors\", sensors);\r",
+											"pm.variables.set(\"sensorId\", sensor);\r",
+											"\r",
+											"//pm.variables.set(\"bldgId\", bldgId);\r",
+											"pm.variables.set(\"from\", fromyear);\r",
+											"pm.variables.set(\"to\", toyear);\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let jsonData = pm.response.json();\r",
+											"\r",
+											"let sensors = pm.variables.get(\"sensors\");\r",
+											"if (sensors && sensors.length > 0) {\r",
+											"    postman.setNextRequest(\"consumption of sensors\");\r",
+											"    //Verify response is received\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"      \r",
+											"} else {\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"   pm.variables.clear(sensors);\r",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "accept",
+										"value": "*/*"
+									}
+								],
+								"url": {
+									"raw": "{{sensorUrl}}/v1/sensors/:sensorId/consumption?from={{from}}&to={{to}}",
+									"host": [
+										"{{sensorUrl}}"
+									],
+									"path": [
+										"v1",
+										"sensors",
+										":sensorId",
+										"consumption"
+									],
+									"query": [
+										{
+											"key": "from",
+											"value": "{{from}}"
+										},
+										{
+											"key": "to",
+											"value": "{{to}}"
+										}
+									],
+									"variable": [
+										{
+											"key": "sensorId",
+											"value": "{{sensorId}}",
+											"description": "Required"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "sensor latest readings",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let jsonData = pm.response.json();\r",
+											"\r",
+											"let bldgIds = pm.variables.get(\"bldgIds\");\r",
+											"if (bldgIds && bldgIds.length > 0) {\r",
+											"    postman.setNextRequest(\"sensor latest readings\");\r",
+											"    //Verify response is received\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"      \r",
+											"} else {\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"   pm.variables.clear(bldgIds);\r",
+											"}\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let input = pm.environment.get(\"sensorData\"); \r",
+											"let parse = require('csv-parse/lib/sync');\r",
+											"\r",
+											"let records = parse(input, {\r",
+											" columns: true,\r",
+											" skip_empty_lines: true\r",
+											"});\r",
+											"\r",
+											"bldg_list = records.map(function (obj) {\r",
+											"  return obj.building_id;\r",
+											"});\r",
+											"\r",
+											"sensor_list = records.map(function (obj) {\r",
+											"  return obj.num_of_sensors;\r",
+											"});\r",
+											"console.log(sensor_list);\r",
+											"// range_list = records.map(function (obj) {\r",
+											"//   return obj.range;\r",
+											"// });\r",
+											"\r",
+											"let bldgIds = pm.variables.get(\"bldgIds\");\r",
+											"    if (!bldgIds) {\r",
+											"     bldgIds = bldg_list;\r",
+											"     sensors = sensor_list;\r",
+											"     //ranges = range_list;\r",
+											"    }\r",
+											"let bldgId = bldgIds.shift();\r",
+											"let sensor = sensors.shift();\r",
+											"//let range = ranges.shift();\r",
+											"console.log(bldgId);\r",
+											"console.log(sensor);\r",
+											"pm.variables.set(\"bldgId\", bldgId);\r",
+											"pm.variables.set(\"sensorId\", sensor);\r",
+											"pm.variables.set(\"range\", \"60\");\r",
+											"pm.variables.set(\"bldgIds\", bldgIds);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "accept",
+										"value": "*/*"
+									}
+								],
+								"url": {
+									"raw": "{{sensorUrl}}/v1/buildings/:buildingId/sensors/:sensorId/readings/latest?range={{range}}",
+									"host": [
+										"{{sensorUrl}}"
+									],
+									"path": [
+										"v1",
+										"buildings",
+										":buildingId",
+										"sensors",
+										":sensorId",
+										"readings",
+										"latest"
+									],
+									"query": [
+										{
+											"key": "range",
+											"value": "{{range}}"
+										}
+									],
+									"variable": [
+										{
+											"key": "buildingId",
+											"value": "{{bldgId}}"
+										},
+										{
+											"key": "sensorId",
+											"value": "{{sensorId}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "latest sensor-readings in building",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let jsonData = pm.response.json();\r",
+											"\r",
+											"let bldgIds = pm.variables.get(\"bldgIds\");\r",
+											"if (bldgIds && bldgIds.length > 0) {\r",
+											"    postman.setNextRequest(\"latest sensor-readings in building\");\r",
+											"    //Verify response is received\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"      \r",
+											"} else {\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"    pm.variables.clear(bldgIds);\r",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let input = pm.environment.get(\"sensorData\"); \r",
+											"let parse = require('csv-parse/lib/sync');\r",
+											"\r",
+											"let records = parse(input, {\r",
+											" columns: true,\r",
+											" skip_empty_lines: true\r",
+											"});\r",
+											"\r",
+											"bldg_list = records.map(function (obj) {\r",
+											"  return obj.building_id;\r",
+											"});\r",
+											"\r",
+											"let bldgIds = pm.variables.get(\"bldgIds\");\r",
+											"    if (!bldgIds) {\r",
+											"     bldgIds = bldg_list;\r",
+											"    }\r",
+											"let bldgId = bldgIds.shift();\r",
+											"pm.variables.set(\"bldgId\", bldgId);\r",
+											"pm.variables.set(\"bldgIds\", bldgIds);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "accept",
+										"value": "*/*"
+									}
+								],
+								"url": {
+									"raw": "{{sensorUrl}}/v1/buildings/:buildingId/sensor-readings/latest",
+									"host": [
+										"{{sensorUrl}}"
+									],
+									"path": [
+										"v1",
+										"buildings",
+										":buildingId",
+										"sensor-readings",
+										"latest"
+									],
+									"variable": [
+										{
+											"key": "buildingId",
+											"value": "{{bldgId}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "total load in building",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let jsonData = pm.response.json();\r",
+											"\r",
+											"let bldgIds = pm.variables.get(\"bldgIds\");\r",
+											"if (bldgIds && bldgIds.length > 0) {\r",
+											"    postman.setNextRequest(\"total load in building\");\r",
+											"    //Verify response is received\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"      \r",
+											"} else {\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"    pm.variables.clear(bldgIds);\r",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let input = pm.environment.get(\"sensorData\"); \r",
+											"let parse = require('csv-parse/lib/sync');\r",
+											"\r",
+											"let records = parse(input, {\r",
+											" columns: true,\r",
+											" skip_empty_lines: true\r",
+											"});\r",
+											"\r",
+											"bldg_list = records.map(function (obj) {\r",
+											"  return obj.building_id;\r",
+											"});\r",
+											"\r",
+											"res_list = records.map(function (obj) {\r",
+											"  return obj.resolution;\r",
+											"});\r",
+											"\r",
+											"range_list = records.map(function (obj) {\r",
+											"  return obj.range;\r",
+											"});\r",
+											"\r",
+											"let bldgIds = pm.variables.get(\"bldgIds\");\r",
+											"    if (!bldgIds) {\r",
+											"     bldgIds = bldg_list;\r",
+											"     resolutions = res_list;\r",
+											"     ranges = range_list;\r",
+											"    }\r",
+											"let bldgId = bldgIds.shift();\r",
+											"let resolution = resolutions.shift();\r",
+											"let range = ranges.shift();\r",
+											"pm.variables.set(\"bldgId\", bldgId);\r",
+											"pm.variables.set(\"resolution\", resolution);\r",
+											"pm.variables.set(\"range\", range);\r",
+											"pm.variables.set(\"bldgIds\", bldgIds);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "accept",
+										"value": "*/*"
+									}
+								],
+								"url": {
+									"raw": "{{sensorUrl}}/v1/buildings/:buildingId/totalload/latest?range={{range}}&resolution={{resolution}}",
+									"host": [
+										"{{sensorUrl}}"
+									],
+									"path": [
+										"v1",
+										"buildings",
+										":buildingId",
+										"totalload",
+										"latest"
+									],
+									"query": [
+										{
+											"key": "range",
+											"value": "{{range}}"
+										},
+										{
+											"key": "resolution",
+											"value": "{{resolution}}"
+										}
+									],
+									"variable": [
+										{
+											"key": "buildingId",
+											"value": "{{bldgId}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "ncp values for sensor",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let year = new Date().toJSON().slice(0, 4);\r",
+											"let month = new Date().toJSON().slice(5, 7);\r",
+											"let input = pm.environment.get(\"sensorData\"); \r",
+											"let parse = require('csv-parse/lib/sync');\r",
+											"\r",
+											"let records = parse(input, {\r",
+											" columns: true,\r",
+											" skip_empty_lines: true\r",
+											"});\r",
+											"\r",
+											"bldg_list = records.map(function (obj) {\r",
+											"  return obj.building_id;\r",
+											"});\r",
+											"\r",
+											"let bldgIds = pm.variables.get(\"bldgIds\");\r",
+											"    if (!bldgIds) {\r",
+											"     bldgIds = bldg_list;\r",
+											"    }\r",
+											"let bldgId = bldgIds.shift();\r",
+											"pm.variables.set(\"bldgId\", bldgId);\r",
+											"pm.variables.set(\"year\", year);\r",
+											"pm.variables.set(\"month\", month);\r",
+											"pm.variables.set(\"bldgIds\", bldgIds);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let jsonData = pm.response.json();\r",
+											"\r",
+											"let bldgIds = pm.variables.get(\"bldgIds\");\r",
+											"if (bldgIds && bldgIds.length > 0) {\r",
+											"    postman.setNextRequest(\"ncp values for sensor\");\r",
+											"    //Verify response is received\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"      \r",
+											"} else {\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"   \r",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "accept",
+										"value": "*/*"
+									}
+								],
+								"url": {
+									"raw": "{{sensorUrl}}/v1/buildings/:buildingId/ncp?year={{year}}&month={{month}}",
+									"host": [
+										"{{sensorUrl}}"
+									],
+									"path": [
+										"v1",
+										"buildings",
+										":buildingId",
+										"ncp"
+									],
+									"query": [
+										{
+											"key": "year",
+											"value": "{{year}}"
+										},
+										{
+											"key": "month",
+											"value": "{{month}}"
+										}
+									],
+									"variable": [
+										{
+											"key": "buildingId",
+											"value": "{{bldgId}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "aggregate",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"//   let fromyear = new Date().getUTCDate();\r",
+											"// let tomonth = new Date().toLocaleDateString();\r",
+											"  var dateNow = new Date();  \r",
+											"var fromyear = new Date(dateNow.setDate(dateNow.getDate() - 14)).toISOString();\r",
+											"let toyear = new Date().toISOString();\r",
+											"let input = pm.environment.get(\"sensorData\"); \r",
+											"let parse = require('csv-parse/lib/sync');\r",
+											"\r",
+											"let records = parse(input, {\r",
+											" columns: true,\r",
+											" skip_empty_lines: true\r",
+											"});\r",
+											"sensor_list = records.map(function (obj) {\r",
+											"  return obj.num_of_sensors;\r",
+											"});\r",
+											"\r",
+											"let sensors = pm.variables.get(\"sensors\");\r",
+											"    if (!sensors) {\r",
+											"     sensors = sensor_list;\r",
+											"    }\r",
+											"\r",
+											"let sensor = sensors.shift();\r",
+											"\r",
+											"pm.variables.set(\"sensors\", sensors);\r",
+											"pm.variables.set(\"sensorId\", sensor);\r",
+											"\r",
+											"//pm.variables.set(\"bldgId\", bldgId);\r",
+											"pm.variables.set(\"from\", fromyear);\r",
+											"pm.variables.set(\"to\", toyear);\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let jsonData = pm.response.json();\r",
+											"\r",
+											"let sensors = pm.variables.get(\"sensors\");\r",
+											"if (sensors && sensors.length > 0) {\r",
+											"    postman.setNextRequest(\"aggregate\");\r",
+											"    //Verify response is received\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"      \r",
+											"} else {\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"    pm.variables.clear(sensors);\r",
+											"   \r",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "accept",
+										"value": "*/*"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/sensors/:sensorId/aggregate?from={{from}}&to={{to}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"sensors",
+										":sensorId",
+										"aggregate"
+									],
+									"query": [
+										{
+											"key": "from",
+											"value": "{{from}}"
+										},
+										{
+											"key": "to",
+											"value": "{{to}}"
+										}
+									],
+									"variable": [
+										{
+											"key": "sensorId",
+											"value": "{{sensorId}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "verify the readings summarize",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"//   let fromyear = new Date().getUTCDate();\r",
+											"// let tomonth = new Date().toLocaleDateString();\r",
+											" //let fromyear = new Date().toISOString();\r",
+											" var dateNow = new Date();  \r",
+											"var fromyear = new Date(dateNow.setDate(dateNow.getDate() - 14)).toISOString();\r",
+											"console.log(fromyear);\r",
+											"\r",
+											"let toyear = new Date().toISOString();\r",
+											"console.log(toyear);\r",
+											"let input = pm.environment.get(\"sensorData\"); \r",
+											"let parse = require('csv-parse/lib/sync');\r",
+											"\r",
+											"let records = parse(input, {\r",
+											" columns: true,\r",
+											" skip_empty_lines: true\r",
+											"});\r",
+											"bldg_id_list = records.map(function (obj) {\r",
+											"  return obj.uuid;\r",
+											"});\r",
+											"\r",
+											"sensortype_list = records.map(function (obj) {\r",
+											"  return obj.type;\r",
+											"});\r",
+											"//let sensortypes= pm.variables.get(\"sensortypes\");\r",
+											"let Ids = pm.variables.get(\"Ids\");\r",
+											"    if (!Ids) {\r",
+											"     Ids = bldg_id_list;\r",
+											"     sensortypes=sensortype_list;\r",
+											"    }\r",
+											"let Id = Ids.shift();\r",
+											"let SensorType= sensortypes.shift();\r",
+											"console.log(Id);\r",
+											"console.log(SensorType);\r",
+											"pm.variables.set(\"Id\", Id);\r",
+											"pm.variables.set(\"Ids\",Ids);\r",
+											"pm.variables.set(\"SensorType\",SensorType);\r",
+											"//pm.variables.set(\"bldgId\", bldgId);\r",
+											"pm.variables.set(\"from\", fromyear);\r",
+											"pm.variables.set(\"to\", toyear);\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let jsonData = pm.response.json();\r",
+											"\r",
+											"let Ids = pm.variables.get(\"Ids\");\r",
+											"if (Ids && Ids.length > 0) {\r",
+											"    postman.setNextRequest(\"verify the readings summarize\");\r",
+											"    //Verify response is received\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"      \r",
+											"} else {\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"    pm.variables.clear(Ids);\r",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "accept",
+										"value": "*/*"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/readings/summarize?type={{SensorType}}&buildingId={{Id}}&from={{from}}&to={{to}}&resolution=5",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"readings",
+										"summarize"
+									],
+									"query": [
+										{
+											"key": "type",
+											"value": "{{SensorType}}"
+										},
+										{
+											"key": "buildingId",
+											"value": "{{Id}}"
+										},
+										{
+											"key": "from",
+											"value": "{{from}}"
+										},
+										{
+											"key": "to",
+											"value": "{{to}}"
+										},
+										{
+											"key": "resolution",
+											"value": "5"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "verify IAQ summarize readings",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"//   let fromyear = new Date().getUTCDate();\r",
+											"// let tomonth = new Date().toLocaleDateString();\r",
+											"  var dateNow = new Date();  \r",
+											"var fromyear = new Date(dateNow.setDate(dateNow.getDate() - 14)).toISOString();\r",
+											"let toyear = new Date().toISOString();\r",
+											"let input = pm.environment.get(\"sensorData\"); \r",
+											"let parse = require('csv-parse/lib/sync');\r",
+											"\r",
+											"let records = parse(input, {\r",
+											" columns: true,\r",
+											" skip_empty_lines: true\r",
+											"});\r",
+											"bldg_id_list = records.map(function (obj) {\r",
+											"  return obj.uuid;\r",
+											"});\r",
+											"\r",
+											"\r",
+											"\r",
+											"let Ids = pm.variables.get(\"Ids\");\r",
+											"    if (!Ids) {\r",
+											"     Ids = bldg_id_list;\r",
+											"    }\r",
+											"let Id = Ids.pop();\r",
+											"pm.variables.set(\"Id\", Id);\r",
+											"pm.variables.set(\"Ids\",Ids);\r",
+											"//pm.variables.set(\"bldgId\", bldgId);\r",
+											"pm.variables.set(\"from\", fromyear);\r",
+											"pm.variables.set(\"to\", toyear);\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let jsonData = pm.response.json();\r",
+											"\r",
+											"let Ids = pm.variables.get(\"Ids\");\r",
+											"if (Ids && Ids.length > 0) {\r",
+											"    postman.setNextRequest(\"verify IAQ summarize readings\");\r",
+											"    //Verify response is received\r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"      \r",
+											"} else {\r",
+											"    postman.setNextRequest(null); \r",
+											"    pm.test(\"Request was successful with status code 200 and success to true\", () => {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    pm.expect(jsonData.success).to.eql(true);\r",
+											"    });\r",
+											"   pm.variables.clear(Ids);\r",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "accept",
+										"value": "*/*"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/iaqScore/summarize?buildingId={{Id}}&from={{from}}&to={{to}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"iaqScore",
+										"summarize"
+									],
+									"query": [
+										{
+											"key": "buildingId",
+											"value": "{{Id}}"
+										},
+										{
+											"key": "from",
+											"value": "{{from}}"
+										},
+										{
+											"key": "to",
+											"value": "{{to}}"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	]
+}
