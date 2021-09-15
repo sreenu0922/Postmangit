@@ -26,7 +26,7 @@
 											"if (bldgIds && bldgIds.length > 0) {\r",
 											"    postman.setNextRequest(\"sensor-readings\");\r",
 											"\r",
-											"    //Verify Status\r",
+											"   \\Verify Status\r",
 											"    pm.test(\"Status Code is 200\", () => {\r",
 											"    pm.response.to.have.status(200);\r",
 											"    });\r",
